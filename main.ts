@@ -1,18 +1,6 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { isMergeable } from 'src/utils/is_mergable';
 
-interface MyPluginSettings {
-	// auto_capitalize_titles: {
-	// 	enabled:setting_prop<boolean>,
-	// 	interval:setting_prop<number>
-	// },
-	[key:string]:object|setting_prop<any>
-}
-// interface sub_setting<T> {
-// 	value: T,
-// 	getter?:()=>T,
-// 	setter?:(val: T)=>any
-// }
 class setting_prop<T>{
 	v:T;
 	setter:(v:T)=>any
@@ -23,6 +11,14 @@ class setting_prop<T>{
 		this.getter=()=>{return this.v}
 	}
 }
+interface MyPluginSettings {
+	[key:string]:object|setting_prop<any>
+	auto_capitalize_titles: {
+		enabled: setting_prop<boolean>,
+		interval: setting_prop<number>,
+	},
+}
+
 const DEFAULT_SETTINGS: MyPluginSettings = {
 	auto_capitalize_titles: {
 		enabled:new setting_prop(false),
@@ -31,7 +27,7 @@ const DEFAULT_SETTINGS: MyPluginSettings = {
 }
 
 export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+	settings:MyPluginSettings;
 
 	async onload() {
 		await this.loadSettings();
@@ -170,36 +166,40 @@ class SampleSettingTab extends PluginSettingTab {
 			
 		let setting_target = this.plugin.settings.auto_capitalize_titles;
 		let setting2_1 = new Setting(containerEl);
+		let setting2_2 = new Setting(containerEl);
+
+		setting2_2.setName("timeout for title auto capitalization")
+		let alertDiv = document.createElement("div");
+		setting2_2.descEl.appendChild(alertDiv);
+		setting2_2.addText(tc=>{
+			tc.setValue(setting_target.interval.getter().toString());
+			tc.setPlaceholder("a number representing timeout in seconds");
+			tc.onChange(v=>{
+				let n = Number(v);
+				if(Number.isNaN(n)|| n<0){
+					alertDiv.innerHTML = "number invalid";
+				}else{
+					alertDiv.innerHTML = "number valid";
+					setting_target.interval.setter(n);
+				}
+				
+			})
+		})
+
+
 		setting2_1.setName("auto capitalize titles")
 		setting2_1.setDesc(`automatically capitalize title every time you create a new file , then gets disabled for [ ${setting_target.interval.getter()} ] seconds for that file`)
 		setting2_1.addToggle(comp=>{
+			comp.setValue(setting_target.enabled.getter());
+			setting2_2.setDisabled(!comp.getValue());
+			// console.log(!comp.getValue()); //debug
+			
 			comp.onChange(value=>{
-				setting_target.true
+				setting_target.enabled.setter(value);
+				setting2_2.setDisabled(!comp.getValue());
+				// console.log(!comp.getValue()); //debug
 			})
 		})
-
-		let setting2_2 = new Setting(containerEl);
-		setting2_2.setName("timeout for title auto capitalization")
-
-		setting2_2.addText(tc=>{
-			setting_target.interval.setter = (v:number)=>{
-				let s= v.toString()
-				tc.setValue(s);
-			}
-			tc.setPlaceholder("a number representing timeout in seconds");
-			tc.onChange(v=>{
-
-			})
-		})
-		// let setting2_2 = new Setting(containerEl)
-		// 	.setName("test")
-		// 	.addButton(comp=>{
-		// 		comp.setButtonText("click here");
-		// 		comp.onClick(evt=>{
-					 
-		// 		})
-		// 	});
-			// containerEl.setCssStyles("color:red");
 	}
 	hide(){
 		super.hide();
