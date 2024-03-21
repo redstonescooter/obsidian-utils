@@ -1,33 +1,12 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
-import { isMergeable } from 'src/utils/is_mergable';
+
 
 interface MyPluginSettings {
-	// auto_capitalize_titles: {
-	// 	enabled:setting_prop<boolean>,
-	// 	interval:setting_prop<number>
-	// },
-	[key:string]:object|setting_prop<any>
+	mySetting: string;
 }
-// interface sub_setting<T> {
-// 	value: T,
-// 	getter?:()=>T,
-// 	setter?:(val: T)=>any
-// }
-class setting_prop<T>{
-	v:T;
-	setter:(v:T)=>any
-	getter:()=>T
-	constructor(v: T){
-		this.v = v;
-		this.setter=(v)=>{this.v =v}
-		this.getter=()=>{return this.v}
-	}
-}
+
 const DEFAULT_SETTINGS: MyPluginSettings = {
-	auto_capitalize_titles: {
-		enabled:new setting_prop(false),
-		interval:new setting_prop(600),
-	},
+	mySetting: 'default'
 }
 
 export default class MyPlugin extends Plugin {
@@ -35,22 +14,7 @@ export default class MyPlugin extends Plugin {
 
 	async onload() {
 		await this.loadSettings();
-		(()=>{
-			const targetObj = {
-				name: 'John', // Key must exist
-				age: 30,      // Can have additional keys
-				address: {
-				  street: '',  // Value type must match
-				  city: 'Anytown',
-				},
-			  };
-			for (const iterator in targetObj) {
-				// let sym = Symbol("desc");
-				// let obj:{[key:symbol]:any}={};
-				// obj[sym]=1;
-				// console.log(obj);
-			}
-		})()
+
 		// This creates an icon in the left ribbon.
 		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
@@ -124,19 +88,6 @@ export default class MyPlugin extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
-	update_settings(setting: object):string{
-		try {
-			this.settings = Object.assign({},this.settings , setting);
-		} catch (error) {
-			return "NOT-OK";
-		}
-		
-		return "OK";
-	}
-	async setting_reset_to_default(){
-		await this.saveData(DEFAULT_SETTINGS);
-		this.settings = DEFAULT_SETTINGS;
-	}
 }
 
 class SampleModal extends Modal {
@@ -167,44 +118,16 @@ class SampleSettingTab extends PluginSettingTab {
 		const {containerEl} = this;
 
 		containerEl.empty();
-			
-		let setting_target = this.plugin.settings.auto_capitalize_titles;
-		let setting2_1 = new Setting(containerEl);
-		setting2_1.setName("auto capitalize titles")
-		setting2_1.setDesc(`automatically capitalize title every time you create a new file , then gets disabled for [ ${setting_target.interval.getter()} ] seconds for that file`)
-		setting2_1.addToggle(comp=>{
-			comp.onChange(value=>{
-				setting_target.true
-			})
-		})
 
-		let setting2_2 = new Setting(containerEl);
-		setting2_2.setName("timeout for title auto capitalization")
-
-		setting2_2.addText(tc=>{
-			setting_target.interval.setter = (v:number)=>{
-				let s= v.toString()
-				tc.setValue(s);
-			}
-			tc.setPlaceholder("a number representing timeout in seconds");
-			tc.onChange(v=>{
-
-			})
-		})
-		// let setting2_2 = new Setting(containerEl)
-		// 	.setName("test")
-		// 	.addButton(comp=>{
-		// 		comp.setButtonText("click here");
-		// 		comp.onClick(evt=>{
-					 
-		// 		})
-		// 	});
-			// containerEl.setCssStyles("color:red");
-	}
-	hide(){
-		super.hide();
-
-		// console.log("overriden hide() :)")
-		// window.alert("ayo");
+		new Setting(containerEl)
+			.setName('Setting #1')
+			.setDesc('It\'s a secret')
+			.addText(text => text
+				.setPlaceholder('Enter your secret')
+				.setValue(this.plugin.settings.mySetting)
+				.onChange(async (value) => {
+					this.plugin.settings.mySetting = value;
+					await this.plugin.saveSettings();
+				}));
 	}
 }
